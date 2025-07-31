@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Love Calculator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <style>
+        :root {
+            --primary: #ff6b8b;
+            --secondary: #ffb8c6;
+            --dark: #d43d5f;
+            --light: #fff5f7;
+            --accent: #ffd166;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        body {
+            background-color: var(--light);
+            color: #333;
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(255, 200, 200, 0.2) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(255, 200, 200, 0.2) 0%, transparent 20%);
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        h1 {
+            font-family: 'Dancing Script', cursive;
+            font-size: 3.5rem;
+            color: var(--dark);
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .description {
+            margin-bottom: 2rem;
+            color: #666;
+            font-size: 1.1rem;
+        }
+        
+        .calculator {
+            background-color: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group {
+            text-align: left;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--dark);
+            font-weight: 600;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 0.8rem;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        
+        input:focus, select:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255, 107, 139, 0.2);
+        }
+        
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            margin-top: 1rem;
+            width: 100%;
+        }
+        
+        button:hover {
+            background-color: var(--dark);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(214, 61, 95, 0.3);
+        }
+        
+        .result {
+            margin-top: 2rem;
+            padding: 2rem;
+            background: linear-gradient(135deg, var(--primary), var(--dark));
+            border-radius: 15px;
+            color: white;
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        .result h2 {
+            font-family: 'Dancing Script', cursive;
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .percentage {
+            font-size: 4rem;
+            font-weight: 700;
+            margin: 1rem 0;
+            color: var(--accent);
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        
+        .message {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+        
+        .zodiac-info {
+            display: flex;
+            justify-content: space-around;
+            margin: 1.5rem 0;
+        }
+        
+        .zodiac-sign {
+            text-align: center;
+        }
+        
+        .zodiac-sign img {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .hearts {
+            position: relative;
+            height: 40px;
+            margin: 1rem 0;
+        }
+        
+        .heart {
+            position: absolute;
+            font-size: 1.5rem;
+            color: var(--accent);
+            animation: float 3s infinite ease-in-out;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .loading {
+            display: none;
+            margin: 2rem 0;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        footer {
+            margin-top: 2rem;
+            color: #888;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Love Calculator</h1>
+        <p class="description">Discover your true love compatibility based on names, zodiac signs, and birth dates!</p>
+        
+        <div class="calculator">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="name1">Your Name</label>
+                    <input type="text" id="name1" placeholder="Enter your name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="name2">Partner's Name</label>
+                    <input type="text" id="name2" placeholder="Enter partner's name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="dob1">Your Birth Date</label>
+                    <input type="date" id="dob1" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="dob2">Partner's Birth Date</label>
+                    <input type="date" id="dob2" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="zodiac1">Your Zodiac Sign</label>
+                    <select id="zodiac1" required>
+                        <option value="">Select your zodiac</option>
+                        <option value="aries">Aries (Mar 21 - Apr 19)</option>
+                        <option value="taurus">Taurus (Apr 20 - May 20)</option>
+                        <option value="gemini">Gemini (May 21 - Jun 20)</option>
+                        <option value="cancer">Cancer (Jun 21 - Jul 22)</option>
+                        <option value="leo">Leo (Jul 23 - Aug 22)</option>
+                        <option value="virgo">Virgo (Aug 23 - Sep 22)</option>
+                        <option value="libra">Libra (Sep 23 - Oct 22)</option>
+                        <option value="scorpio">Scorpio (Oct 23 - Nov 21)</option>
+                        <option value="sagittarius">Sagittarius (Nov 22 - Dec 21)</option>
+                        <option value="capricorn">Capricorn (Dec 22 - Jan 19)</option>
+                        <option value="aquarius">Aquarius (Jan 20 - Feb 18)</option>
+                        <option value="pisces">Pisces (Feb 19 - Mar 20)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="zodiac2">Partner's Zodiac Sign</label>
+                    <select id="zodiac2" required>
+                        <option value="">Select partner's zodiac</option>
+                        <option value="aries">Aries (Mar 21 - Apr 19)</option>
+                        <option value="taurus">Taurus (Apr 20 - May 20)</option>
+                        <option value="gemini">Gemini (May 21 - Jun 20)</option>
+                        <option value="cancer">Cancer (Jun 21 - Jul 22)</option>
+                        <option value="leo">Leo (Jul 23 - Aug 22)</option>
+                        <option value="virgo">Virgo (Aug 23 - Sep 22)</option>
+                        <option value="libra">Libra (Sep 23 - Oct 22)</option>
+                        <option value="scorpio">Scorpio (Oct 23 - Nov 21)</option>
+                        <option value="sagittarius">Sagittarius (Nov 22 - Dec 21)</option>
+                        <option value="capricorn">Capricorn (Dec 22 - Jan 19)</option>
+                        <option value="aquarius">Aquarius (Jan 20 - Feb 18)</option>
+                        <option value="pisces">Pisces (Feb 19 - Mar 20)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button id="calculate-btn">Calculate Love Compatibility</button>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Analyzing your cosmic connection...</p>
+            </div>
+            
+            <div class="result" id="result">
+                <h2>Love Compatibility Result</h2>
+                
+                <div class="hearts">
+                    <div class="heart" style="left: 20%; animation-delay: 0s;">❤️</div>
+                    <div class="heart" style="left: 40%; animation-delay: 0.5s;">❤️</div>
+                    <div class="heart" style="left: 60%; animation-delay: 1s;">❤️</div>
+                    <div class="heart" style="left: 80%; animation-delay: 1.5s;">❤️</div>
+                </div>
+                
+                <div class="percentage" id="percentage">0%</div>
+                
+                <div class="message" id="message"></div>
+                
+                <div class="zodiac-info">
+                    <div class="zodiac-sign">
+                        <div id="zodiac1-icon">♈</div>
+                        <div id="zodiac1-name">Aries</div>
+                    </div>
+                    <div class="zodiac-sign">
+                        <div id="zodiac2-icon">♉</div>
+                        <div id="zodiac2-name">Taurus</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>This love calculator is for entertainment purposes only. Results are based on astrological compatibility algorithms.</p>
+        </footer>
+    </div>
+
+    <script>
+        // Firebase configuration - YOUR DETAILS
+        const firebaseConfig = {
+            apiKey: "AIzaSyBIsxk1DoMMYyVtdOnTUi4eUAIq6Jczwmo",
+            authDomain: "aayush-slovecalculator.firebaseapp.com",
+            projectId: "aayush-slovecalculator",
+            storageBucket: "aayush-slovecalculator.appspot.com",
+            messagingSenderId: "736078704264",
+            appId: "1:736078704264:web:1e2bd60dbe1e335a07793d",
+            measurementId: "G-PJWS4NMY6V"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Special cases - YOU and YOUR CRUSH
+        const YOUR_DETAILS = {
+            name: "aayush",
+            dob: "2008-04-12",
+            zodiac: "aries"
+        };
+
+        const CRUSH_DETAILS = {
+            name: "alayna",
+            dob: "2008-03-08",
+            zodiac: "pisces"
+        };
+
+        // Zodiac sign emojis
+        const zodiacEmojis = {
+            aries: '♈',
+            taurus: '♉',
+            gemini: '♊',
+            cancer: '♋',
+            leo: '♌',
+            virgo: '♍',
+            libra: '♎',
+            scorpio: '♏',
+            sagittarius: '♐',
+            capricorn: '♑',
+            aquarius: '♒',
+            pisces: '♓'
+        };
+
+        // Compatibility messages based on percentage
+        const messages = [
+            { min: 0, max: 20, message: "Not a great match. The stars don't align well for this pairing." },
+            { min: 21, max: 40, message: "There might be some challenges in this relationship." },
+            { min: 41, max: 60, message: "A decent match with potential if both partners work at it." },
+            { min: 61, max: 80, message: "Great compatibility! This could be a wonderful relationship." },
+            { min: 81, max: 100, message: "Amazing match! The stars strongly favor this pairing." }
+        ];
+
+        // Calculate love percentage with natural ranges
+        function calculateLove(name1, name2, zodiac1, zodiac2, dob1, dob2) {
+            // Convert to lowercase for case-insensitive comparison
+            const name1Lower = name1.toLowerCase();
+            const name2Lower = name2.toLowerCase();
+            
+            // Create base seed for deterministic calculation
+            const seed = name1Lower + name2Lower + zodiac1 + zodiac2 + dob1 + dob2;
+            let hash = 0;
+            for (let i = 0; i < seed.length; i++) {
+                const char = seed.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            let basePercentage = Math.abs(hash) % 51 + 50; // 50-100% range
+            
+            // 1. Special case: You + Alayna (85-92%)
+            if ((name1Lower === YOUR_DETAILS.name && name2Lower === CRUSH_DETAILS.name && dob1 === YOUR_DETAILS.dob && dob2 === CRUSH_DETAILS.dob) ||
+                (name1Lower === CRUSH_DETAILS.name && name2Lower === YOUR_DETAILS.name && dob1 === CRUSH_DETAILS.dob && dob2 === YOUR_DETAILS.dob)) {
+                return Math.min(92, Math.max(85, basePercentage + 25));
+            }
+            
+            // 2. When Alayna is with others (60-80%)
+            if ((name1Lower === CRUSH_DETAILS.name && dob1 === CRUSH_DETAILS.dob) ||
+                (name2Lower === CRUSH_DETAILS.name && dob2 === CRUSH_DETAILS.dob)) {
+                return Math.max(60, Math.min(80, basePercentage + 5));
+            }
+            
+            // 3. When you're with others (65-85%)
+            if ((name1Lower === YOUR_DETAILS.name && dob1 === YOUR_DETAILS.dob) ||
+                (name2Lower === YOUR_DETAILS.name && dob2 === YOUR_DETAILS.dob)) {
+                return Math.max(65, Math.min(85, basePercentage + 10));
+            }
+            
+            // 4. Everyone else - normal calculation (50-100%)
+            return basePercentage;
+        }
+
+        // Get zodiac sign from date
+        function getZodiacFromDate(date) {
+            const dob = new Date(date);
+            const month = dob.getMonth() + 1;
+            const day = dob.getDate();
+            
+            if ((month === 3 && day >= 21) || (month === 4 && day <= 19)) return 'aries';
+            if ((month === 4 && day >= 20) || (month === 5 && day <= 20)) return 'taurus';
+            if ((month === 5 && day >= 21) || (month === 6 && day <= 20)) return 'gemini';
+            if ((month === 6 && day >= 21) || (month === 7 && day <= 22)) return 'cancer';
+            if ((month === 7 && day >= 23) || (month === 8 && day <= 22)) return 'leo';
+            if ((month === 8 && day >= 23) || (month === 9 && day <= 22)) return 'virgo';
+            if ((month === 9 && day >= 23) || (month === 10 && day <= 22)) return 'libra';
+            if ((month === 10 && day >= 23) || (month === 11 && day <= 21)) return 'scorpio';
+            if ((month === 11 && day >= 22) || (month === 12 && day <= 21)) return 'sagittarius';
+            if ((month === 12 && day >= 22) || (month === 1 && day <= 19)) return 'capricorn';
+            if ((month === 1 && day >= 20) || (month === 2 && day <= 18)) return 'aquarius';
+            if ((month === 2 && day >= 19) || (month === 3 && day <= 20)) return 'pisces';
+            return 'unknown';
+        }
+
+        // Get compatibility message
+        function getCompatibilityMessage(percentage) {
+            for (const range of messages) {
+                if (percentage >= range.min && percentage <= range.max) {
+                    return range.message;
+                }
+            }
+            return "The stars have no message for this pairing.";
+        }
+
+        // Save calculation to Firestore
+        async function saveCalculation(name1, name2, zodiac1, zodiac2, dob1, dob2, percentage) {
+            try {
+                await db.collection('loveCalculations').add({
+                    name1: name1,
+                    name2: name2,
+                    zodiac1: zodiac1,
+                    zodiac2: zodiac2,
+                    dob1: dob1,
+                    dob2: dob2,
+                    percentage: percentage,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    userAgent: navigator.userAgent,
+                    screenResolution: `${window.screen.width}x${window.screen.height}`
+                });
+                console.log('Calculation saved to Firestore');
+            } catch (error) {
+                console.error('Error saving calculation:', error);
+            }
+        }
+
+        // DOM elements
+        const calculateBtn = document.getElementById('calculate-btn');
+        const resultDiv = document.getElementById('result');
+        const percentageDiv = document.getElementById('percentage');
+        const messageDiv = document.getElementById('message');
+        const zodiac1Icon = document.getElementById('zodiac1-icon');
+        const zodiac1Name = document.getElementById('zodiac1-name');
+        const zodiac2Icon = document.getElementById('zodiac2-icon');
+        const zodiac2Name = document.getElementById('zodiac2-name');
+        const loadingDiv = document.getElementById('loading');
+
+        // Event listener for calculate button
+        calculateBtn.addEventListener('click', async () => {
+            // Get input values
+            const name1 = document.getElementById('name1').value.trim();
+            const name2 = document.getElementById('name2').value.trim();
+            const dob1 = document.getElementById('dob1').value;
+            const dob2 = document.getElementById('dob2').value;
+            const zodiac1 = document.getElementById('zodiac1').value;
+            const zodiac2 = document.getElementById('zodiac2').value;
+            
+            // Validate inputs
+            if (!name1 || !name2 || !dob1 || !dob2 || !zodiac1 || !zodiac2) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            // Show loading
+            loadingDiv.style.display = 'block';
+            resultDiv.style.display = 'none';
+            
+            // Calculate (with small delay for effect)
+            setTimeout(() => {
+                const percentage = calculateLove(name1, name2, zodiac1, zodiac2, dob1, dob2);
+                const message = getCompatibilityMessage(percentage);
+                
+                // Update UI
+                percentageDiv.textContent = `${percentage}%`;
+                messageDiv.textContent = message;
+                zodiac1Icon.textContent = zodiacEmojis[zodiac1] || '♈';
+                zodiac1Name.textContent = zodiac1.charAt(0).toUpperCase() + zodiac1.slice(1);
+                zodiac2Icon.textContent = zodiacEmojis[zodiac2] || '♉';
+                zodiac2Name.textContent = zodiac2.charAt(0).toUpperCase() + zodiac2.slice(1);
+                
+                // Hide loading and show result
+                loadingDiv.style.display = 'none';
+                resultDiv.style.display = 'block';
+                
+                saveCalculation(name1, name2, zodiac1, zodiac2, dob1, dob2, percentage);
+            }, 1500);
+        });
+        
+        document.getElementById('dob1').addEventListener('change', function() {
+            const zodiacSelect = document.getElementById('zodiac1');
+            if (!zodiacSelect.value) {
+                const zodiac = getZodiacFromDate(this.value);
+                if (zodiac !== 'unknown') {
+                    zodiacSelect.value = zodiac;
+                }
+            }
+        });
+        
+        document.getElementById('dob2').addEventListener('change', function() {
+            const zodiacSelect = document.getElementById('zodiac2');
+            if (!zodiacSelect.value) {
+                const zodiac = getZodiacFromDate(this.value);
+                if (zodiac !== 'unknown') {
+                    zodiacSelect.value = zodiac;
+                }
+            }
+        });
+    </script>
+</body>
+</html>
